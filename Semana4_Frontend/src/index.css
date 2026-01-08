@@ -1,0 +1,109 @@
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+  
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+.app-container {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.navbar-brand {
+  font-weight: bold;
+  color: #0d6efd !important;
+}
+
+.card-header {
+  font-weight: 600;
+  background-color: #0d6efd !important;
+  color: white !important;
+}
+
+.btn-primary {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+  background-color: #0b5ed7;
+  border-color: #0a58ca;
+}
+
+.sidebar {
+  min-height: calc(100vh - 56px);
+  background-color: #343a40;
+  color: white;
+}
+
+.sidebar .nav-link {
+  color: rgba(255, 255, 255, 0.75);
+  padding: 0.75rem 1rem;
+}
+
+.sidebar .nav-link:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar .nav-link.active {
+  color: white;
+  background-color: #0d6efd;
+}
+
+.encrypted-field {
+  background-color: #fff3cd;
+  border-left: 4px solid #ffc107;
+  padding: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.encrypted-badge {
+  background-color: #ffc107;
+  color: #000;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  margin-left: 0.5rem;
+}
+
+.crypto-demo {
+  background-color: #e7f3ff;
+  border: 2px solid #0d6efd;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  margin: 1rem 0;
+}
+
+.audit-log-item {
+  border-left: 3px solid #6c757d;
+  padding-left: 1rem;
+  margin-bottom: 1rem;
+}
+
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+  border-width: 0.15rem;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+}
