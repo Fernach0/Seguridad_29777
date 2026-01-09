@@ -12,7 +12,7 @@ class Usuario(db.Model, TimestampMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
-    salt = db.Column(db.String(32), nullable=False)
+    salt = db.Column(db.String(32), nullable=True)  # Nullable porque bcrypt incluye el salt en el hash
     rol = db.Column(db.String(20), nullable=False, index=True)
     nombre = db.Column(db.String(100), nullable=False)
     apellido = db.Column(db.String(100), nullable=False)

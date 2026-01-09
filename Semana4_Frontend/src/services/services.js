@@ -39,30 +39,41 @@ export const authService = {
 }
 
 export const userService = {
-  async getUsers(params = {}) {
+  async getAll(params = {}) {
     const response = await api.get('/users', { params })
-    return response.data
+    // El backend devuelve data.users dentro de data
+    if (response.data.success && response.data.data) {
+      return response.data.data.users || []
+    }
+    return response.data.users || []
   },
 
-  async getUserById(id) {
+  async getById(id) {
     const response = await api.get(`/users/${id}`)
-    return response.data
+    return response.data.data || response.data
   },
 
-  async createUser(userData) {
+  async create(userData) {
     const response = await api.post('/users', userData)
-    return response.data
+    return response.data.data || response.data
   },
 
-  async updateUser(id, userData) {
+  async update(id, userData) {
     const response = await api.put(`/users/${id}`, userData)
-    return response.data
+    return response.data.data || response.data
   },
 
-  async deleteUser(id) {
+  async delete(id) {
     const response = await api.delete(`/users/${id}`)
     return response.data
-  }
+  },
+
+  // Alias para mantener compatibilidad
+  getUsers(params) { return this.getAll(params) },
+  getUserById(id) { return this.getById(id) },
+  createUser(userData) { return this.create(userData) },
+  updateUser(id, userData) { return this.update(id, userData) },
+  deleteUser(id) { return this.delete(id) }
 }
 
 export const patientService = {

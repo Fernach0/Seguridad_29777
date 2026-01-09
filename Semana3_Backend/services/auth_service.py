@@ -10,13 +10,14 @@ from models.base import db
 from models.user import Usuario
 from models.audit_log import AuditLog
 from services.crypto_service import get_crypto_service
+from utils.validators import validate_cedula_ecuador, validate_email
 
 
 class AuthService:
     """Servicio para gestionar autenticación y autorización de usuarios"""
     
     @staticmethod
-    def register_user(username, password, email, rol='medico'):
+    def register_user(username, password, email, rol='medico', nombre='', apellido='', cedula=''):
         """
         Registrar un nuevo usuario en el sistema
         
@@ -24,16 +25,38 @@ class AuthService:
             username: Nombre de usuario único
             password: Contraseña en texto plano (se hasheará)
             email: Email del usuario
-            rol: Rol del usuario (admin, medico, enfermero)
+            rol: Rol del usuario (admin, doctor)
+            nombre: Nombre del usuario
+            apellido: Apellido del usuario
+            cedula: Cédula ecuatoriana (10 dígitos)
             
         Returns:
-            Usuario creado o None si falla
+            Usuario creado o lanza ValueError si hay error de validación
         """
         try:
+            # Validar cédula ecuatoriana
+            if cedula and not validate_cedula_ecuador(cedula):
+                raise ValueError('Cédula ecuatoriana inválida. Debe ser una cédula válida de 10 dígitos.')
+            
+            # Validar email
+            if not validate_email(email):
+                raise ValueError('Formato de email inválido')
+            
             # Verificar si el usuario ya existe
             existing_user = Usuario.query.filter_by(username=username).first()
             if existing_user:
-                return None
+                raise ValueError(f'El usuario {username} ya existe')
+            
+            # Verificar si la cédula ya existe
+            if cedula:
+                existing_cedula = Usuario.query.filter_by(cedula=cedula).first()
+                if existing_cedula:
+                    raise ValueError(f'La cédula {cedula} ya está registrada')
+            
+            # Verificar si el email ya existe
+            existing_email = Usuario.query.filter_by(email=email).first()
+            if existing_email:
+                raise ValueError(f'El email {email} ya está registrado')
             
             # Hashear la contraseña usando el crypto_service
             password_hash = get_crypto_service().hash_password(password)
@@ -43,7 +66,11 @@ class AuthService:
                 username=username,
                 password_hash=password_hash,
                 email=email,
-                rol=rol
+                rol=rol,
+                nombre=nombre,
+                apellido=apellido,
+                cedula=cedula,
+                activo=True
             )
             
             db.session.add(nuevo_usuario)
@@ -58,10 +85,13 @@ class AuthService:
             
             return nuevo_usuario
             
+        except ValueError as ve:
+            db.session.rollback()
+            raise ve
         except Exception as e:
             db.session.rollback()
             print(f"Error al registrar usuario: {str(e)}")
-            return None
+            raise ValueError(f'Error al registrar usuario: {str(e)}')
     
     @staticmethod
     def login(username, password):
@@ -92,13 +122,14 @@ class AuthService:
                 )
                 return None
             
-            # Crear token JWT
-            identity = {
-                'id': usuario.id,
-                'username': usuario.username,
-                'rol': usuario.rol
-            }
-            access_token = create_access_token(identity=identity)
+            # Crear token JWT con claims adicionales
+            access_token = create_access_token(
+                identity=str(usuario.id),  # El subject debe ser un string
+                additional_claims={
+                    'username': usuario.username,
+                    'rol': usuario.rol
+                }
+            )
             
             # Registrar login exitoso
             AuthService.log_audit(

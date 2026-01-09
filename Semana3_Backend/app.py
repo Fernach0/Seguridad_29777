@@ -64,6 +64,7 @@ def create_app(config_name=None):
     # Manejadores de errores JWT
     @jwt.expired_token_loader
     def expired_token_callback(jwt_header, jwt_payload):
+        print("⚠️  JWT Error: Token expirado")
         return jsonify({
             'success': False,
             'error': 'Token expirado',
@@ -72,6 +73,7 @@ def create_app(config_name=None):
     
     @jwt.invalid_token_loader
     def invalid_token_callback(error):
+        print(f"⚠️  JWT Error: Token inválido - {error}")
         return jsonify({
             'success': False,
             'error': 'Token inválido',
@@ -80,6 +82,7 @@ def create_app(config_name=None):
     
     @jwt.unauthorized_loader
     def missing_token_callback(error):
+        print(f"⚠️  JWT Error: Token no proporcionado - {error}")
         return jsonify({
             'success': False,
             'error': 'Token no proporcionado',

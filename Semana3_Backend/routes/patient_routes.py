@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from models.patient import Paciente
 from models.base import db
 from services.crypto_service import get_crypto_service
+from utils.validators import validate_cedula_ecuador
 from datetime import datetime
 
 patient_bp = Blueprint('patient_bp', __name__, url_prefix='/api/v1/patients')
@@ -65,60 +66,83 @@ def create_patient():
         data = request.get_json()
         
         # Validar campos requeridos
-        required_fields = ['first_name', 'last_name', 'date_of_birth']
+        required_fields = ['nombre', 'apellido', 'cedula', 'fecha_nacimiento']
         for field in required_fields:
             if field not in data:
-                return jsonify({'error': f'Campo requerido: {field}'}), 400
+                return jsonify({
+                    'success': False,
+                    'error': f'Campo requerido: {field}'
+                }), 400
+        
+        # Validar cédula ecuatoriana
+        if not validate_cedula_ecuador(data['cedula']):
+            return jsonify({
+                'success': False,
+                'error': 'Cédula ecuatoriana inválida. Debe ser una cédula válida de 10 dígitos.'
+            }), 400
+        
+        # Verificar si la cédula ya existe
+        existing_patient = Paciente.query.filter_by(cedula=data['cedula']).first()
+        if existing_patient:
+            return jsonify({
+                'success': False,
+                'error': f'La cédula {data["cedula"]} ya está registrada'
+            }), 400
         
         # Cifrar campos sensibles
-        encrypted_allergies = None
-        if data.get('allergies'):
-            encrypted_allergies = get_crypto_service().encrypt_aes(data['allergies'])
+        encrypted_alergias = None
+        alergias_iv = None
+        if data.get('alergias'):
+            encrypted_data = get_crypto_service().encrypt_aes(data['alergias'])
+            encrypted_alergias = encrypted_data['ciphertext']
+            alergias_iv = encrypted_data['iv']
         
-        encrypted_history = None
-        if data.get('medical_history'):
-            encrypted_history = get_crypto_service().encrypt_aes(data['medical_history'])
+        encrypted_antecedentes = None
+        antecedentes_iv = None
+        if data.get('antecedentes'):
+            encrypted_data = get_crypto_service().encrypt_aes(data['antecedentes'])
+            encrypted_antecedentes = encrypted_data['ciphertext']
+            antecedentes_iv = encrypted_data['iv']
         
         # Crear paciente
-        Paciente = Paciente(
-            first_name=data['first_name'],
-            last_name=data['last_name'],
-            date_of_birth=datetime.fromisoformat(data['date_of_birth'].replace('Z', '+00:00')),
-            gender=data.get('gender'),
-            blood_type=data.get('blood_type'),
-            phone=data.get('phone'),
+        paciente = Paciente(
+            cedula=data['cedula'],
+            nombre=data['nombre'],
+            apellido=data['apellido'],
+            fecha_nacimiento=datetime.fromisoformat(data['fecha_nacimiento'].replace('Z', '+00:00')).date(),
+            genero=data.get('genero'),
+            grupo_sanguineo=data.get('tipo_sangre'),
+            telefono=data.get('telefono'),
             email=data.get('email'),
-            address=data.get('address'),
-            allergies=encrypted_allergies,
-            medical_history=encrypted_history,
-            emergency_contact=data.get('emergency_contact')
+            direccion=data.get('direccion'),
+            alergias_encrypted=encrypted_alergias,
+            alergias_iv=alergias_iv,
+            antecedentes_encrypted=encrypted_antecedentes,
+            antecedentes_iv=antecedentes_iv
         )
         
-        db.session.add(Paciente)
+        db.session.add(paciente)
         db.session.commit()
         
-        # Preparar respuesta
-        response_data = {
-            'id': Paciente.id,
-            'first_name': Paciente.first_name,
-            'last_name': Paciente.last_name,
-            'date_of_birth': Paciente.date_of_birth.isoformat(),
-            'gender': Paciente.gender,
-            'blood_type': Paciente.blood_type,
-            'phone': Paciente.phone,
-            'email': Paciente.email,
-            'address': Paciente.address,
-            'allergies': data.get('allergies'),
-            'medical_history': data.get('medical_history'),
-            'emergency_contact': Paciente.emergency_contact,
-            'created_at': Paciente.created_at.isoformat()
-        }
+        return jsonify({
+            'success': True,
+            'data': paciente.to_dict(include_encrypted=False),
+            'message': 'Paciente creado exitosamente'
+        }), 201
         
-        return jsonify(response_data), 201
-        
+    except ValueError as ve:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(ve)
+        }), 400
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'success': False,
+            'error': 'Error en el servidor',
+            'details': str(e)
+        }), 500
 
 
 @patient_bp.route('/<int:id>', methods=['GET'])
