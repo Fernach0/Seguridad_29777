@@ -142,9 +142,9 @@ Es una plataforma web que permite gestionar historias clínicas médicas de form
 
 ## 👥 EQUIPO DE DESARROLLO
 
-- Estudiante 1: [Nombre]
-- Estudiante 2: [Nombre]
-- Estudiante 3: [Nombre]
+- Estudiante 1: [Luis Cueva]
+- Estudiante 2: [Mateo Condor]
+- Estudiante 3: [Gabriel Reinoso]
 
 **Profesor**: Walter Fuertes, PhD.  
 **Curso**: Ingeniería de Seguridad de Software  

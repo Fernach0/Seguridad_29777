@@ -17,44 +17,55 @@ def get_patients():
         patients = Paciente.query.all()
         
         result = []
-        for Paciente in patients:
+        for paciente in patients:
             patient_data = {
-                'id': Paciente.id,
-                'first_name': Paciente.first_name,
-                'last_name': Paciente.last_name,
-                'date_of_birth': Paciente.date_of_birth.isoformat() if Paciente.date_of_birth else None,
-                'gender': Paciente.gender,
-                'blood_type': Paciente.blood_type,
-                'phone': Paciente.phone,
-                'email': Paciente.email,
-                'address': Paciente.address,
-                'emergency_contact': Paciente.emergency_contact,
-                'created_at': Paciente.created_at.isoformat() if Paciente.created_at else None,
-                'updated_at': Paciente.updated_at.isoformat() if Paciente.updated_at else None
+                'id': paciente.id,
+                'cedula': paciente.cedula,
+                'nombre': paciente.nombre,
+                'apellido': paciente.apellido,
+                'fecha_nacimiento': paciente.fecha_nacimiento.isoformat() if paciente.fecha_nacimiento else None,
+                'genero': paciente.genero,
+                'grupo_sanguineo': paciente.grupo_sanguineo,
+                'telefono': paciente.telefono,
+                'email': paciente.email,
+                'direccion': paciente.direccion,
+                'created_at': paciente.created_at.isoformat() if paciente.created_at else None,
+                'updated_at': paciente.updated_at.isoformat() if paciente.updated_at else None
             }
             
             # Descifrar campos sensibles
-            if Paciente.allergies:
+            if paciente.alergias_encrypted and paciente.alergias_iv:
                 try:
-                    patient_data['allergies'] = get_crypto_service().decrypt_aes(Paciente.allergies)
-                except:
-                    patient_data['allergies'] = None
+                    patient_data['alergias'] = get_crypto_service().decrypt_aes(
+                        paciente.alergias_encrypted, 
+                        paciente.alergias_iv
+                    )
+                except Exception as e:
+                    print(f"⚠️  Error descifrando alergias: {e}")
+                    patient_data['alergias'] = None
             else:
-                patient_data['allergies'] = None
+                patient_data['alergias'] = None
                 
-            if Paciente.medical_history:
+            if paciente.antecedentes_encrypted and paciente.antecedentes_iv:
                 try:
-                    patient_data['medical_history'] = get_crypto_service().decrypt_aes(Paciente.medical_history)
-                except:
-                    patient_data['medical_history'] = None
+                    patient_data['antecedentes'] = get_crypto_service().decrypt_aes(
+                        paciente.antecedentes_encrypted,
+                        paciente.antecedentes_iv
+                    )
+                except Exception as e:
+                    print(f"⚠️  Error descifrando antecedentes: {e}")
+                    patient_data['antecedentes'] = None
             else:
-                patient_data['medical_history'] = None
+                patient_data['antecedentes'] = None
             
             result.append(patient_data)
         
         return jsonify(result), 200
         
     except Exception as e:
+        print(f"❌ Error obteniendo pacientes: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
@@ -93,16 +104,12 @@ def create_patient():
         encrypted_alergias = None
         alergias_iv = None
         if data.get('alergias'):
-            encrypted_data = get_crypto_service().encrypt_aes(data['alergias'])
-            encrypted_alergias = encrypted_data['ciphertext']
-            alergias_iv = encrypted_data['iv']
+            encrypted_alergias, alergias_iv = get_crypto_service().encrypt_aes(data['alergias'])
         
         encrypted_antecedentes = None
         antecedentes_iv = None
         if data.get('antecedentes'):
-            encrypted_data = get_crypto_service().encrypt_aes(data['antecedentes'])
-            encrypted_antecedentes = encrypted_data['ciphertext']
-            antecedentes_iv = encrypted_data['iv']
+            encrypted_antecedentes, antecedentes_iv = get_crypto_service().encrypt_aes(data['antecedentes'])
         
         # Crear paciente
         paciente = Paciente(
@@ -138,6 +145,10 @@ def create_patient():
         }), 400
     except Exception as e:
         db.session.rollback()
+        print(f"❌ Error creando paciente: {str(e)}")
+        print(f"   Tipo de error: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'success': False,
             'error': 'Error en el servidor',
@@ -150,46 +161,57 @@ def create_patient():
 def get_patient(id):
     """Obtener un paciente por ID"""
     try:
-        Paciente = Paciente.query.get(id)
+        paciente = Paciente.query.get(id)
         
-        if not Paciente:
+        if not paciente:
             return jsonify({'error': 'Paciente no encontrado'}), 404
         
         patient_data = {
-            'id': Paciente.id,
-            'first_name': Paciente.first_name,
-            'last_name': Paciente.last_name,
-            'date_of_birth': Paciente.date_of_birth.isoformat() if Paciente.date_of_birth else None,
-            'gender': Paciente.gender,
-            'blood_type': Paciente.blood_type,
-            'phone': Paciente.phone,
-            'email': Paciente.email,
-            'address': Paciente.address,
-            'emergency_contact': Paciente.emergency_contact,
-            'created_at': Paciente.created_at.isoformat() if Paciente.created_at else None,
-            'updated_at': Paciente.updated_at.isoformat() if Paciente.updated_at else None
+            'id': paciente.id,
+            'cedula': paciente.cedula,
+            'nombre': paciente.nombre,
+            'apellido': paciente.apellido,
+            'fecha_nacimiento': paciente.fecha_nacimiento.isoformat() if paciente.fecha_nacimiento else None,
+            'genero': paciente.genero,
+            'grupo_sanguineo': paciente.grupo_sanguineo,
+            'telefono': paciente.telefono,
+            'email': paciente.email,
+            'direccion': paciente.direccion,
+            'created_at': paciente.created_at.isoformat() if paciente.created_at else None,
+            'updated_at': paciente.updated_at.isoformat() if paciente.updated_at else None
         }
         
         # Descifrar campos sensibles
-        if Paciente.allergies:
+        if paciente.alergias_encrypted and paciente.alergias_iv:
             try:
-                patient_data['allergies'] = get_crypto_service().decrypt_aes(Paciente.allergies)
-            except:
-                patient_data['allergies'] = None
+                patient_data['alergias'] = get_crypto_service().decrypt_aes(
+                    paciente.alergias_encrypted,
+                    paciente.alergias_iv
+                )
+            except Exception as e:
+                print(f"⚠️  Error descifrando alergias: {e}")
+                patient_data['alergias'] = None
         else:
-            patient_data['allergies'] = None
+            patient_data['alergias'] = None
             
-        if Paciente.medical_history:
+        if paciente.antecedentes_encrypted and paciente.antecedentes_iv:
             try:
-                patient_data['medical_history'] = get_crypto_service().decrypt_aes(Paciente.medical_history)
-            except:
-                patient_data['medical_history'] = None
+                patient_data['antecedentes'] = get_crypto_service().decrypt_aes(
+                    paciente.antecedentes_encrypted,
+                    paciente.antecedentes_iv
+                )
+            except Exception as e:
+                print(f"⚠️  Error descifrando antecedentes: {e}")
+                patient_data['antecedentes'] = None
         else:
-            patient_data['medical_history'] = None
+            patient_data['antecedentes'] = None
         
         return jsonify(patient_data), 200
         
     except Exception as e:
+        print(f"❌ Error obteniendo paciente {id}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
@@ -198,85 +220,100 @@ def get_patient(id):
 def update_patient(id):
     """Actualizar un paciente"""
     try:
-        Paciente = Paciente.query.get(id)
+        paciente = Paciente.query.get(id)
         
-        if not Paciente:
+        if not paciente:
             return jsonify({'error': 'Paciente no encontrado'}), 404
         
         data = request.get_json()
         
         # Actualizar campos básicos
-        if 'first_name' in data:
-            Paciente.first_name = data['first_name']
-        if 'last_name' in data:
-            Paciente.last_name = data['last_name']
-        if 'date_of_birth' in data:
-            Paciente.date_of_birth = datetime.fromisoformat(data['date_of_birth'].replace('Z', '+00:00'))
-        if 'gender' in data:
-            Paciente.gender = data['gender']
-        if 'blood_type' in data:
-            Paciente.blood_type = data['blood_type']
-        if 'phone' in data:
-            Paciente.phone = data['phone']
+        if 'nombre' in data:
+            paciente.nombre = data['nombre']
+        if 'apellido' in data:
+            paciente.apellido = data['apellido']
+        if 'fecha_nacimiento' in data:
+            paciente.fecha_nacimiento = datetime.fromisoformat(data['fecha_nacimiento'].replace('Z', '+00:00')).date()
+        if 'genero' in data:
+            paciente.genero = data['genero']
+        if 'grupo_sanguineo' in data or 'tipo_sangre' in data:
+            paciente.grupo_sanguineo = data.get('grupo_sanguineo') or data.get('tipo_sangre')
+        if 'telefono' in data:
+            paciente.telefono = data['telefono']
         if 'email' in data:
-            Paciente.email = data['email']
-        if 'address' in data:
-            Paciente.address = data['address']
-        if 'emergency_contact' in data:
-            Paciente.emergency_contact = data['emergency_contact']
+            paciente.email = data['email']
+        if 'direccion' in data:
+            paciente.direccion = data['direccion']
         
         # Actualizar campos cifrados
-        if 'allergies' in data:
-            if data['allergies']:
-                Paciente.allergies = get_crypto_service().encrypt_aes(data['allergies'])
+        if 'alergias' in data:
+            if data['alergias']:
+                encrypted_alergias, alergias_iv = get_crypto_service().encrypt_aes(data['alergias'])
+                paciente.alergias_encrypted = encrypted_alergias
+                paciente.alergias_iv = alergias_iv
             else:
-                Paciente.allergies = None
+                paciente.alergias_encrypted = None
+                paciente.alergias_iv = None
                 
-        if 'medical_history' in data:
-            if data['medical_history']:
-                Paciente.medical_history = get_crypto_service().encrypt_aes(data['medical_history'])
+        if 'antecedentes' in data:
+            if data['antecedentes']:
+                encrypted_antecedentes, antecedentes_iv = get_crypto_service().encrypt_aes(data['antecedentes'])
+                paciente.antecedentes_encrypted = encrypted_antecedentes
+                paciente.antecedentes_iv = antecedentes_iv
             else:
-                Paciente.medical_history = None
+                paciente.antecedentes_encrypted = None
+                paciente.antecedentes_iv = None
         
-        Paciente.updated_at = datetime.utcnow()
+        paciente.updated_at = datetime.utcnow()
         db.session.commit()
         
         # Preparar respuesta
         response_data = {
-            'id': Paciente.id,
-            'first_name': Paciente.first_name,
-            'last_name': Paciente.last_name,
-            'date_of_birth': Paciente.date_of_birth.isoformat() if Paciente.date_of_birth else None,
-            'gender': Paciente.gender,
-            'blood_type': Paciente.blood_type,
-            'phone': Paciente.phone,
-            'email': Paciente.email,
-            'address': Paciente.address,
-            'emergency_contact': Paciente.emergency_contact,
-            'updated_at': Paciente.updated_at.isoformat()
+            'id': paciente.id,
+            'cedula': paciente.cedula,
+            'nombre': paciente.nombre,
+            'apellido': paciente.apellido,
+            'fecha_nacimiento': paciente.fecha_nacimiento.isoformat() if paciente.fecha_nacimiento else None,
+            'genero': paciente.genero,
+            'grupo_sanguineo': paciente.grupo_sanguineo,
+            'telefono': paciente.telefono,
+            'email': paciente.email,
+            'direccion': paciente.direccion,
+            'updated_at': paciente.updated_at.isoformat()
         }
         
         # Descifrar para respuesta
-        if Paciente.allergies:
+        if paciente.alergias_encrypted and paciente.alergias_iv:
             try:
-                response_data['allergies'] = get_crypto_service().decrypt_aes(Paciente.allergies)
-            except:
-                response_data['allergies'] = None
+                response_data['alergias'] = get_crypto_service().decrypt_aes(
+                    paciente.alergias_encrypted,
+                    paciente.alergias_iv
+                )
+            except Exception as e:
+                print(f"⚠️  Error descifrando alergias: {e}")
+                response_data['alergias'] = None
         else:
-            response_data['allergies'] = None
+            response_data['alergias'] = None
             
-        if Paciente.medical_history:
+        if paciente.antecedentes_encrypted and paciente.antecedentes_iv:
             try:
-                response_data['medical_history'] = get_crypto_service().decrypt_aes(Paciente.medical_history)
-            except:
-                response_data['medical_history'] = None
+                response_data['antecedentes'] = get_crypto_service().decrypt_aes(
+                    paciente.antecedentes_encrypted,
+                    paciente.antecedentes_iv
+                )
+            except Exception as e:
+                print(f"⚠️  Error descifrando antecedentes: {e}")
+                response_data['antecedentes'] = None
         else:
-            response_data['medical_history'] = None
+            response_data['antecedentes'] = None
         
         return jsonify(response_data), 200
         
     except Exception as e:
         db.session.rollback()
+        print(f"❌ Error actualizando paciente {id}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
@@ -285,17 +322,20 @@ def update_patient(id):
 def delete_patient(id):
     """Eliminar un paciente"""
     try:
-        Paciente = Paciente.query.get(id)
+        paciente = Paciente.query.get(id)
         
-        if not Paciente:
+        if not paciente:
             return jsonify({'error': 'Paciente no encontrado'}), 404
         
-        db.session.delete(Paciente)
+        db.session.delete(paciente)
         db.session.commit()
         
         return jsonify({'message': 'Paciente eliminado correctamente'}), 200
         
     except Exception as e:
         db.session.rollback()
+        print(f"❌ Error eliminando paciente {id}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 

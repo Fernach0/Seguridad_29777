@@ -33,18 +33,20 @@ class CryptoService:
     # CIFRADO SIMÉTRICO - AES-256-CBC
     # ==========================================
     
-    def encrypt_aes(self, plaintext: str) -> Tuple[bytes, bytes]:
+    def encrypt_aes(self, plaintext: str, iv: bytes = None) -> Tuple[bytes, bytes]:
         """
         Cifrar texto con AES-256-CBC
         
         Args:
             plaintext: Texto a cifrar
+            iv: Vector de inicialización (opcional). Si no se proporciona, se genera uno aleatorio.
             
         Returns:
             (ciphertext, iv): Texto cifrado y vector de inicialización
         """
-        # Generar IV aleatorio (16 bytes)
-        iv = os.urandom(16)
+        # Generar IV aleatorio si no se proporciona (16 bytes)
+        if iv is None:
+            iv = os.urandom(16)
         
         # Crear cipher AES-256-CBC
         cipher = Cipher(

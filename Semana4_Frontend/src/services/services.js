@@ -77,47 +77,73 @@ export const userService = {
 }
 
 export const patientService = {
-  async getPatients(params = {}) {
+  async getAll(params = {}) {
     const response = await api.get('/patients', { params })
-    return response.data
+    return response.data.data || response.data
   },
 
-  async getPatientById(id) {
+  async getById(id) {
     const response = await api.get(`/patients/${id}`)
-    return response.data
+    return response.data.data || response.data
   },
 
-  async createPatient(patientData) {
+  async create(patientData) {
     const response = await api.post('/patients', patientData)
-    return response.data
+    return response.data.data || response.data
   },
 
-  async updatePatient(id, patientData) {
+  async update(id, patientData) {
     const response = await api.put(`/patients/${id}`, patientData)
-    return response.data
+    return response.data.data || response.data
   },
 
-  async deletePatient(id) {
+  async delete(id) {
     const response = await api.delete(`/patients/${id}`)
     return response.data
-  }
+  },
+
+  // Alias para mantener compatibilidad
+  getPatients(params) { return this.getAll(params) },
+  getPatientById(id) { return this.getById(id) },
+  createPatient(patientData) { return this.create(patientData) },
+  updatePatient(id, patientData) { return this.update(id, patientData) },
+  deletePatient(id) { return this.delete(id) }
 }
 
 export const medicalRecordService = {
-  async getRecordsByPatient(patientId) {
-    const response = await api.get(`/medical-records/patient/${patientId}`)
-    return response.data
+  async getAll() {
+    const response = await api.get('/medical-records')
+    return response.data || []
   },
 
-  async getRecordById(id) {
+  async getById(id) {
     const response = await api.get(`/medical-records/${id}`)
     return response.data
   },
 
-  async createRecord(recordData) {
+  async create(recordData) {
     const response = await api.post('/medical-records', recordData)
     return response.data
   },
+
+  async update(id, recordData) {
+    const response = await api.put(`/medical-records/${id}`, recordData)
+    return response.data
+  },
+
+  async delete(id) {
+    const response = await api.delete(`/medical-records/${id}`)
+    return response.data
+  },
+
+  // Alias methods for backward compatibility
+  async getRecordsByPatient(patientId) {
+    const response = await api.get(`/medical-records/paciente/${patientId}`)
+    return response.data
+  },
+
+  getRecordById(id) { return this.getById(id) },
+  createRecord(recordData) { return this.create(recordData) },
 
   async getMyRecords() {
     const response = await api.get('/medical-records/mine')
@@ -126,18 +152,23 @@ export const medicalRecordService = {
 }
 
 export const auditService = {
+  async getAll(params = {}) {
+    const response = await api.get('/audit-logs', { params })
+    return response.data
+  },
+
   async getAuditLogs(params = {}) {
-    const response = await api.get('/audit', { params })
+    const response = await api.get('/audit-logs', { params })
     return response.data
   },
 
   async getUserAuditLogs(userId, params = {}) {
-    const response = await api.get(`/audit/user/${userId}`, { params })
+    const response = await api.get(`/audit-logs/user/${userId}`, { params })
     return response.data
   },
 
   async getAuditStats() {
-    const response = await api.get('/audit/stats')
+    const response = await api.get('/audit-logs/stats')
     return response.data
   }
 }

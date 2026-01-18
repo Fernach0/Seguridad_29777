@@ -141,21 +141,6 @@ const Dashboard = () => {
           </Card>
         </Col>
       </Row>
-
-      <Row className="mt-4">
-        <Col>
-          <Card className="border-0 shadow-sm bg-light">
-            <Card.Body>
-              <h5>Módulo Educativo de Criptografía</h5>
-              <p className="mb-0">
-                Accede al módulo de <strong>Demo Criptografía</strong> para aprender y 
-                experimentar con diferentes técnicas de cifrado, incluyendo los cifrados 
-                clásicos César y Vigenère, además de las técnicas modernas implementadas.
-              </p>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
     </Container>
   )
 }

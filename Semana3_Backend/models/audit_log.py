@@ -29,6 +29,11 @@ class AuditLog(db.Model):
         return {
             'id': self.id,
             'usuario_id': self.usuario_id,
+            'usuario': {
+                'id': self.usuario.id,
+                'username': self.usuario.username,
+                'nombre_completo': f"{self.usuario.nombre} {self.usuario.apellido}"
+            } if self.usuario else None,
             'accion': self.accion,
             'tabla_afectada': self.tabla_afectada,
             'registro_id': self.registro_id,

@@ -185,18 +185,30 @@ def update_user(user_id):
 @user_bp.route('/<int:user_id>', methods=['DELETE'])
 @jwt_required()
 def delete_user(user_id):
-    """Desactivar usuario - Solo admin"""
+    """Eliminar usuario - Solo admin"""
     error_response = require_admin()
     if error_response:
         return error_response
     
     try:
-        usuario = AuthService.deactivate_user(user_id)
+        AuthService.delete_user(user_id)
         
         return jsonify({
             'success': True,
-            'message': 'Usuario desactivado exitosamente'
+            'message': 'Usuario eliminado exitosamente'
         }), 200
+        
+    except ValueError as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 404
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': 'Error en el servidor',
+            'details': str(e)
+        }), 500
         
     except ValueError as e:
         return jsonify({

@@ -43,10 +43,6 @@ function AppNavbar() {
               Historias Clínicas
             </Nav.Link>
             
-            <Nav.Link as={Link} to="/crypto-demo">
-              Demo Cripto
-            </Nav.Link>
-            
             {user.rol === 'admin' && (
               <Nav.Link as={Link} to="/audit">
                 Auditoría

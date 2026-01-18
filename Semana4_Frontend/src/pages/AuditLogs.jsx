@@ -31,8 +31,10 @@ const AuditLogs = () => {
   const loadLogs = async () => {
     try {
       setLoading(true)
-      const data = await auditService.getAll()
-      setLogs(data)
+      const response = await auditService.getAll()
+      // El backend devuelve data.data.logs
+      const logsData = response.success && response.data ? response.data.logs : []
+      setLogs(logsData)
       setError('')
     } catch (err) {
       setError('Error al cargar logs de auditoría: ' + err.message)

@@ -7,7 +7,6 @@ import Dashboard from './pages/Dashboard'
 import Users from './pages/Users'
 import Patients from './pages/Patients'
 import MedicalRecords from './pages/MedicalRecords'
-import CryptoDemo from './pages/CryptoDemo'
 import AuditLogs from './pages/AuditLogs'
 import NotFound from './pages/NotFound'
 
@@ -41,12 +40,6 @@ function App() {
             <Route path="/medical-records" element={
               <PrivateRoute>
                 <MedicalRecords />
-              </PrivateRoute>
-            } />
-            
-            <Route path="/crypto-demo" element={
-              <PrivateRoute>
-                <CryptoDemo />
               </PrivateRoute>
             } />
             

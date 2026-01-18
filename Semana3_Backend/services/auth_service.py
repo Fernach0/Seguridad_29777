@@ -169,7 +169,7 @@ class AuthService:
         
         Args:
             user_id: ID del usuario a actualizar
-            **kwargs: Campos a actualizar (username, email, password, rol)
+            **kwargs: Campos a actualizar (username, email, password, rol, nombre, apellido, cedula, activo)
             
         Returns:
             Usuario actualizado o None si falla
@@ -177,7 +177,7 @@ class AuthService:
         try:
             usuario = Usuario.query.get(user_id)
             if not usuario:
-                return None
+                raise ValueError("Usuario no encontrado")
             
             # Actualizar campos
             if 'username' in kwargs:
@@ -186,12 +186,24 @@ class AuthService:
             if 'email' in kwargs:
                 usuario.email = kwargs['email']
             
-            if 'password' in kwargs:
-                # Hashear nueva contraseña
+            if 'nombre' in kwargs:
+                usuario.nombre = kwargs['nombre']
+            
+            if 'apellido' in kwargs:
+                usuario.apellido = kwargs['apellido']
+            
+            if 'cedula' in kwargs:
+                usuario.cedula = kwargs['cedula']
+            
+            if 'password' in kwargs and kwargs['password']:
+                # Hashear nueva contraseña solo si se proporciona
                 usuario.password_hash = get_crypto_service().hash_password(kwargs['password'])
             
             if 'rol' in kwargs:
                 usuario.rol = kwargs['rol']
+            
+            if 'activo' in kwargs:
+                usuario.activo = kwargs['activo']
             
             db.session.commit()
             
@@ -207,7 +219,47 @@ class AuthService:
         except Exception as e:
             db.session.rollback()
             print(f"Error al actualizar usuario: {str(e)}")
-            return None
+            import traceback
+            traceback.print_exc()
+            raise
+    
+    @staticmethod
+    def delete_user(user_id):
+        """
+        Eliminar un usuario de la base de datos
+        
+        Args:
+            user_id: ID del usuario a eliminar
+            
+        Returns:
+            True si se eliminó correctamente
+        """
+        try:
+            usuario = Usuario.query.get(user_id)
+            if not usuario:
+                raise ValueError("Usuario no encontrado")
+            
+            username = usuario.username
+            
+            # Eliminar usuario
+            db.session.delete(usuario)
+            db.session.commit()
+            
+            # Registrar auditoría
+            AuthService.log_audit(
+                user_id=user_id,
+                action='DELETE_USER',
+                description=f'Usuario {username} eliminado'
+            )
+            
+            return True
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error al eliminar usuario: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise
     
     @staticmethod
     def log_audit(user_id, action, description, additional_data=None):

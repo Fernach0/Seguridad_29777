@@ -13,6 +13,7 @@ const MedicalRecords = () => {
   const [editingRecord, setEditingRecord] = useState(null)
   const [formData, setFormData] = useState({
     paciente_id: '',
+    fecha_consulta: new Date().toISOString().split('T')[0], // Fecha de hoy por defecto
     sintomas: '',
     diagnostico: '',
     tratamiento: '',
@@ -53,6 +54,7 @@ const MedicalRecords = () => {
       setEditingRecord(record)
       setFormData({
         paciente_id: record.paciente_id,
+        fecha_consulta: record.fecha_consulta || new Date().toISOString().split('T')[0],
         sintomas: record.sintomas || '',
         diagnostico: record.diagnostico || '',
         tratamiento: record.tratamiento || '',
@@ -62,6 +64,7 @@ const MedicalRecords = () => {
       setEditingRecord(null)
       setFormData({
         paciente_id: '',
+        fecha_consulta: new Date().toISOString().split('T')[0],
         sintomas: '',
         diagnostico: '',
         tratamiento: '',
@@ -306,6 +309,17 @@ const MedicalRecords = () => {
                   </option>
                 ))}
               </Form.Select>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Fecha de Consulta *</Form.Label>
+              <Form.Control
+                type="date"
+                required
+                value={formData.fecha_consulta}
+                onChange={(e) => setFormData({...formData, fecha_consulta: e.target.value})}
+                max={new Date().toISOString().split('T')[0]}
+              />
             </Form.Group>
 
             <Form.Group className="mb-3">

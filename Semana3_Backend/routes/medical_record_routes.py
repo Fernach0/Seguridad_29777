@@ -1,75 +1,174 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from models.medical_record import HistoriaClinica
 from models.patient import Paciente
+from models.user import Usuario
 from models.base import db
 from services.crypto_service import get_crypto_service
 from datetime import datetime
+import json
 
 medical_record_bp = Blueprint('medical_record_bp', __name__, url_prefix='/api/v1/medical-records')
 
 
-@medical_record_bp.route('/Paciente/<int:patient_id>', methods=['GET'])
+@medical_record_bp.route('/', methods=['GET'])
 @jwt_required()
-def get_patient_records(patient_id):
-    """Obtener todos los registros médicos de un paciente"""
+def get_all_records():
+    """Obtener todas las historias clínicas"""
     try:
-        # Verificar que el paciente existe
-        Paciente = Paciente.query.get(patient_id)
-        if not Paciente:
-            return jsonify({'error': 'Paciente no encontrado'}), 404
-        
-        records = HistoriaClinica.query.filter_by(patient_id=patient_id).all()
+        records = HistoriaClinica.query.all()
         
         result = []
         for record in records:
             record_data = {
                 'id': record.id,
-                'patient_id': record.patient_id,
-                'doctor_name': record.doctor_name,
-                'visit_date': record.visit_date.isoformat() if record.visit_date else None,
+                'paciente_id': record.paciente_id,
+                'doctor_id': record.doctor_id,
+                'fecha_consulta': record.fecha_consulta.isoformat() if record.fecha_consulta else None,
                 'created_at': record.created_at.isoformat() if record.created_at else None,
-                'integrity_hash': record.integrity_hash
+                'hash_integridad': record.hash_integridad
             }
             
-            # Descifrar campos sensibles
-            if record.symptoms:
+            # Descifrar campos sensibles usando el mismo IV
+            if record.sintomas_encrypted and record.iv_aes:
                 try:
-                    record_data['symptoms'] = get_crypto_service().decrypt_aes(record.symptoms)
-                except:
-                    record_data['symptoms'] = None
+                    record_data['sintomas'] = get_crypto_service().decrypt_aes(
+                        record.sintomas_encrypted,
+                        record.iv_aes
+                    )
+                except Exception as e:
+                    print(f"⚠️  Error descifrando síntomas: {e}")
+                    record_data['sintomas'] = None
             else:
-                record_data['symptoms'] = None
+                record_data['sintomas'] = None
                 
-            if record.diagnosis:
+            if record.diagnostico_encrypted and record.iv_aes:
                 try:
-                    record_data['diagnosis'] = get_crypto_service().decrypt_aes(record.diagnosis)
-                except:
-                    record_data['diagnosis'] = None
+                    record_data['diagnostico'] = get_crypto_service().decrypt_aes(
+                        record.diagnostico_encrypted,
+                        record.iv_aes
+                    )
+                except Exception as e:
+                    print(f"⚠️  Error descifrando diagnóstico: {e}")
+                    record_data['diagnostico'] = None
             else:
-                record_data['diagnosis'] = None
+                record_data['diagnostico'] = None
                 
-            if record.treatment:
+            if record.tratamiento_encrypted and record.iv_aes:
                 try:
-                    record_data['treatment'] = get_crypto_service().decrypt_aes(record.treatment)
-                except:
-                    record_data['treatment'] = None
+                    record_data['tratamiento'] = get_crypto_service().decrypt_aes(
+                        record.tratamiento_encrypted,
+                        record.iv_aes
+                    )
+                except Exception as e:
+                    print(f"⚠️  Error descifrando tratamiento: {e}")
+                    record_data['tratamiento'] = None
             else:
-                record_data['treatment'] = None
+                record_data['tratamiento'] = None
                 
-            if record.notes:
+            if record.notas_encrypted and record.iv_aes:
                 try:
-                    record_data['notes'] = get_crypto_service().decrypt_aes(record.notes)
-                except:
-                    record_data['notes'] = None
+                    record_data['notas'] = get_crypto_service().decrypt_aes(
+                        record.notas_encrypted,
+                        record.iv_aes
+                    )
+                except Exception as e:
+                    print(f"⚠️  Error descifrando notas: {e}")
+                    record_data['notas'] = None
             else:
-                record_data['notes'] = None
+                record_data['notas'] = None
             
             result.append(record_data)
         
         return jsonify(result), 200
         
     except Exception as e:
+        print(f"❌ Error obteniendo todas las historias clínicas: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@medical_record_bp.route('/paciente/<int:patient_id>', methods=['GET'])
+@jwt_required()
+def get_patient_records(patient_id):
+    """Obtener todos los registros médicos de un paciente"""
+    try:
+        # Verificar que el paciente existe
+        paciente = Paciente.query.get(patient_id)
+        if not paciente:
+            return jsonify({'error': 'Paciente no encontrado'}), 404
+        
+        records = HistoriaClinica.query.filter_by(paciente_id=patient_id).all()
+        
+        result = []
+        for record in records:
+            record_data = {
+                'id': record.id,
+                'paciente_id': record.paciente_id,
+                'doctor_id': record.doctor_id,
+                'fecha_consulta': record.fecha_consulta.isoformat() if record.fecha_consulta else None,
+                'created_at': record.created_at.isoformat() if record.created_at else None,
+                'hash_integridad': record.hash_integridad
+            }
+            
+            # Descifrar campos sensibles usando el mismo IV
+            if record.sintomas_encrypted and record.iv_aes:
+                try:
+                    record_data['sintomas'] = get_crypto_service().decrypt_aes(
+                        record.sintomas_encrypted,
+                        record.iv_aes
+                    )
+                except Exception as e:
+                    print(f"⚠️  Error descifrando síntomas: {e}")
+                    record_data['sintomas'] = None
+            else:
+                record_data['sintomas'] = None
+                
+            if record.diagnostico_encrypted and record.iv_aes:
+                try:
+                    record_data['diagnostico'] = get_crypto_service().decrypt_aes(
+                        record.diagnostico_encrypted,
+                        record.iv_aes
+                    )
+                except Exception as e:
+                    print(f"⚠️  Error descifrando diagnóstico: {e}")
+                    record_data['diagnostico'] = None
+            else:
+                record_data['diagnostico'] = None
+                
+            if record.tratamiento_encrypted and record.iv_aes:
+                try:
+                    record_data['tratamiento'] = get_crypto_service().decrypt_aes(
+                        record.tratamiento_encrypted,
+                        record.iv_aes
+                    )
+                except Exception as e:
+                    print(f"⚠️  Error descifrando tratamiento: {e}")
+                    record_data['tratamiento'] = None
+            else:
+                record_data['tratamiento'] = None
+                
+            if record.notas_encrypted and record.iv_aes:
+                try:
+                    record_data['notas'] = get_crypto_service().decrypt_aes(
+                        record.notas_encrypted,
+                        record.iv_aes
+                    )
+                except Exception as e:
+                    print(f"⚠️  Error descifrando notas: {e}")
+                    record_data['notas'] = None
+            else:
+                record_data['notas'] = None
+            
+            result.append(record_data)
+        
+        return jsonify(result), 200
+        
+    except Exception as e:
+        print(f"❌ Error obteniendo historias clínicas: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
@@ -79,75 +178,96 @@ def create_record():
     """Crear un nuevo registro médico"""
     try:
         data = request.get_json()
+        claims = get_jwt()
+        doctor_id = int(get_jwt_identity())
         
         # Validar campos requeridos
-        required_fields = ['patient_id', 'doctor_name', 'visit_date', 'symptoms', 'diagnosis']
+        required_fields = ['paciente_id', 'fecha_consulta', 'sintomas', 'diagnostico']
         for field in required_fields:
             if field not in data:
-                return jsonify({'error': f'Campo requerido: {field}'}), 400
+                return jsonify({
+                    'success': False,
+                    'error': f'Campo requerido: {field}'
+                }), 400
         
         # Verificar que el paciente existe
-        Paciente = Paciente.query.get(data['patient_id'])
-        if not Paciente:
-            return jsonify({'error': 'Paciente no encontrado'}), 404
+        paciente = Paciente.query.get(data['paciente_id'])
+        if not paciente:
+            return jsonify({
+                'success': False,
+                'error': 'Paciente no encontrado'
+            }), 404
         
-        # Cifrar campos sensibles
-        encrypted_symptoms = get_crypto_service().encrypt_aes(data['symptoms'])
-        encrypted_diagnosis = get_crypto_service().encrypt_aes(data['diagnosis'])
+        # Generar un IV único para este registro y usarlo para todos los campos
+        sintomas_encrypted, iv = get_crypto_service().encrypt_aes(data['sintomas'])
+        diagnostico_encrypted, _ = get_crypto_service().encrypt_aes(data['diagnostico'], iv)
         
-        encrypted_treatment = None
-        if data.get('treatment'):
-            encrypted_treatment = get_crypto_service().encrypt_aes(data['treatment'])
+        tratamiento_encrypted = None
+        if data.get('tratamiento'):
+            tratamiento_encrypted, _ = get_crypto_service().encrypt_aes(data['tratamiento'], iv)
         
-        encrypted_notes = None
-        if data.get('notes'):
-            encrypted_notes = get_crypto_service().encrypt_aes(data['notes'])
-        
-        # Crear registro médico
-        record = HistoriaClinica(
-            patient_id=data['patient_id'],
-            doctor_name=data['doctor_name'],
-            visit_date=datetime.fromisoformat(data['visit_date'].replace('Z', '+00:00')),
-            symptoms=encrypted_symptoms,
-            diagnosis=encrypted_diagnosis,
-            treatment=encrypted_treatment,
-            notes=encrypted_notes
-        )
+        notas_encrypted = None
+        if data.get('notas'):
+            notas_encrypted, _ = get_crypto_service().encrypt_aes(data['notas'], iv)
         
         # Calcular hash de integridad
         record_content = {
-            'patient_id': record.patient_id,
-            'doctor_name': record.doctor_name,
-            'visit_date': record.visit_date.isoformat(),
-            'symptoms': data['symptoms'],
-            'diagnosis': data['diagnosis'],
-            'treatment': data.get('treatment', ''),
-            'notes': data.get('notes', '')
+            'paciente_id': data['paciente_id'],
+            'doctor_id': doctor_id,
+            'fecha_consulta': data['fecha_consulta'],
+            'sintomas': data['sintomas'],
+            'diagnostico': data['diagnostico'],
+            'tratamiento': data.get('tratamiento', ''),
+            'notas': data.get('notas', '')
         }
-        record.integrity_hash = get_crypto_service().hash_medical_record(record_content)
+        hash_integridad = get_crypto_service().calculate_sha256(json.dumps(record_content, sort_keys=True))
+        
+        # Crear registro médico
+        record = HistoriaClinica(
+            paciente_id=data['paciente_id'],
+            doctor_id=doctor_id,
+            fecha_consulta=datetime.fromisoformat(data['fecha_consulta'].replace('Z', '+00:00')).date(),
+            sintomas_encrypted=sintomas_encrypted,
+            diagnostico_encrypted=diagnostico_encrypted,
+            tratamiento_encrypted=tratamiento_encrypted,
+            notas_encrypted=notas_encrypted,
+            iv_aes=iv,
+            hash_integridad=hash_integridad
+        )
         
         db.session.add(record)
         db.session.commit()
         
         # Preparar respuesta
         response_data = {
-            'id': record.id,
-            'patient_id': record.patient_id,
-            'doctor_name': record.doctor_name,
-            'visit_date': record.visit_date.isoformat(),
-            'symptoms': data['symptoms'],
-            'diagnosis': data['diagnosis'],
-            'treatment': data.get('treatment'),
-            'notes': data.get('notes'),
-            'integrity_hash': record.integrity_hash,
-            'created_at': record.created_at.isoformat()
+            'success': True,
+            'data': {
+                'id': record.id,
+                'paciente_id': record.paciente_id,
+                'doctor_id': record.doctor_id,
+                'fecha_consulta': record.fecha_consulta.isoformat(),
+                'sintomas': data['sintomas'],
+                'diagnostico': data['diagnostico'],
+                'tratamiento': data.get('tratamiento'),
+                'notas': data.get('notas'),
+                'hash_integridad': record.hash_integridad,
+                'created_at': record.created_at.isoformat()
+            },
+            'message': 'Historia clínica creada exitosamente'
         }
         
         return jsonify(response_data), 201
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        print(f"❌ Error creando historia clínica: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': 'Error en el servidor',
+            'details': str(e)
+        }), 500
 
 
 @medical_record_bp.route('/<int:id>', methods=['GET'])
@@ -162,62 +282,81 @@ def get_record(id):
         
         record_data = {
             'id': record.id,
-            'patient_id': record.patient_id,
-            'doctor_name': record.doctor_name,
-            'visit_date': record.visit_date.isoformat() if record.visit_date else None,
+            'paciente_id': record.paciente_id,
+            'doctor_id': record.doctor_id,
+            'fecha_consulta': record.fecha_consulta.isoformat() if record.fecha_consulta else None,
             'created_at': record.created_at.isoformat() if record.created_at else None,
-            'integrity_hash': record.integrity_hash
+            'hash_integridad': record.hash_integridad
         }
         
         # Descifrar campos sensibles
-        if record.symptoms:
+        if record.sintomas_encrypted and record.iv_aes:
             try:
-                record_data['symptoms'] = get_crypto_service().decrypt_aes(record.symptoms)
-            except:
-                record_data['symptoms'] = None
+                record_data['sintomas'] = get_crypto_service().decrypt_aes(
+                    record.sintomas_encrypted,
+                    record.iv_aes
+                )
+            except Exception as e:
+                print(f"⚠️  Error descifrando síntomas: {e}")
+                record_data['sintomas'] = None
         else:
-            record_data['symptoms'] = None
+            record_data['sintomas'] = None
             
-        if record.diagnosis:
+        if record.diagnostico_encrypted and record.iv_aes:
             try:
-                record_data['diagnosis'] = get_crypto_service().decrypt_aes(record.diagnosis)
-            except:
-                record_data['diagnosis'] = None
+                record_data['diagnostico'] = get_crypto_service().decrypt_aes(
+                    record.diagnostico_encrypted,
+                    record.iv_aes
+                )
+            except Exception as e:
+                print(f"⚠️  Error descifrando diagnóstico: {e}")
+                record_data['diagnostico'] = None
         else:
-            record_data['diagnosis'] = None
+            record_data['diagnostico'] = None
             
-        if record.treatment:
+        if record.tratamiento_encrypted and record.iv_aes:
             try:
-                record_data['treatment'] = get_crypto_service().decrypt_aes(record.treatment)
-            except:
-                record_data['treatment'] = None
+                record_data['tratamiento'] = get_crypto_service().decrypt_aes(
+                    record.tratamiento_encrypted,
+                    record.iv_aes
+                )
+            except Exception as e:
+                print(f"⚠️  Error descifrando tratamiento: {e}")
+                record_data['tratamiento'] = None
         else:
-            record_data['treatment'] = None
+            record_data['tratamiento'] = None
             
-        if record.notes:
+        if record.notas_encrypted and record.iv_aes:
             try:
-                record_data['notes'] = get_crypto_service().decrypt_aes(record.notes)
-            except:
-                record_data['notes'] = None
+                record_data['notas'] = get_crypto_service().decrypt_aes(
+                    record.notas_encrypted,
+                    record.iv_aes
+                )
+            except Exception as e:
+                print(f"⚠️  Error descifrando notas: {e}")
+                record_data['notas'] = None
         else:
-            record_data['notes'] = None
+            record_data['notas'] = None
         
         # Verificar integridad
         record_content = {
-            'patient_id': record.patient_id,
-            'doctor_name': record.doctor_name,
-            'visit_date': record.visit_date.isoformat() if record.visit_date else '',
-            'symptoms': record_data.get('symptoms', ''),
-            'diagnosis': record_data.get('diagnosis', ''),
-            'treatment': record_data.get('treatment', ''),
-            'notes': record_data.get('notes', '')
+            'paciente_id': record.paciente_id,
+            'doctor_id': record.doctor_id,
+            'fecha_consulta': record.fecha_consulta.isoformat() if record.fecha_consulta else '',
+            'sintomas': record_data.get('sintomas', ''),
+            'diagnostico': record_data.get('diagnostico', ''),
+            'tratamiento': record_data.get('tratamiento', ''),
+            'notas': record_data.get('notas', '')
         }
         
-        calculated_hash = get_crypto_service().hash_medical_record(record_content)
-        record_data['integrity_verified'] = (calculated_hash == record.integrity_hash)
+        calculated_hash = get_crypto_service().calculate_sha256(json.dumps(record_content, sort_keys=True))
+        record_data['integrity_verified'] = (calculated_hash == record.hash_integridad)
         
         return jsonify(record_data), 200
         
     except Exception as e:
+        print(f"❌ Error obteniendo historia clínica {id}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 

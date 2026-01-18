@@ -184,13 +184,13 @@ La jerarquía de roles (Administrador, Doctor, Paciente) está claramente defini
 **Firmas del Equipo**:
 
 _______________________  
-Estudiante 1
+Luis Cueva
 
 _______________________  
-Estudiante 2
+Mateo Condor
 
 _______________________  
-Estudiante 3
+Gabriel Reinoso
 
 ---
 
