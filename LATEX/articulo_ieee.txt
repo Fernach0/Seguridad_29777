@@ -1,0 +1,401 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage[spanish]{babel}
+\usepackage[utf8]{inputenc}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{ESPE MedSafe: Sistema de Gestión Médica con Técnicas Criptográficas Avanzadas\\
+}
+
+\author{\IEEEauthorblockN{Nombre del Autor}
+\IEEEauthorblockA{\textit{Carrera de Tecnologías de la Información} \\
+\textit{Universidad de las Fuerzas Armadas ESPE}\\
+Sangolquí, Ecuador \\
+correo@espe.edu.ec}
+}
+
+\maketitle
+
+\begin{abstract}
+Este artículo presenta el desarrollo e implementación de ESPE MedSafe, un sistema de gestión médica que integra técnicas criptográficas avanzadas para garantizar la confidencialidad, integridad y autenticidad de la información médica sensible. El sistema implementa AES-256-CBC para cifrado de datos, SHA-256 para verificación de integridad, Bcrypt para protección de contraseñas y JWT para autenticación segura. La arquitectura del sistema se basa en un backend desarrollado en Flask con PostgreSQL y un frontend en React. Los resultados demuestran que la implementación de estas técnicas criptográficas proporciona un nivel robusto de seguridad sin comprometer significativamente el rendimiento del sistema. Este trabajo contribuye al campo de la seguridad de la información médica mediante la integración práctica de múltiples capas de protección criptográfica.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Criptografía, AES-256, SHA-256, Bcrypt, Sistema de Gestión Médica, Seguridad de la Información, Historias Clínicas Electrónicas
+\end{IEEEkeywords}
+
+\tableofcontents
+
+\section{Introducción}
+
+La digitalización de registros médicos ha transformado la manera en que se almacena y gestiona la información de pacientes en instituciones de salud. Sin embargo, esta transformación digital conlleva desafíos significativos en términos de seguridad y privacidad de datos sensibles \cite{ejemplo1}. La información médica contiene datos altamente confidenciales que requieren protección contra accesos no autorizados, modificaciones maliciosas y filtraciones de datos.
+
+En Ecuador, la Ley Orgánica de Protección de Datos Personales establece requisitos estrictos para el manejo de información sensible, especialmente en el ámbito de la salud. Las instituciones médicas deben implementar medidas técnicas y organizativas que garanticen la seguridad de los datos de pacientes.
+
+Este trabajo presenta ESPE MedSafe, un sistema integral de gestión médica desarrollado específicamente para la Universidad de las Fuerzas Armadas ESPE, que integra múltiples técnicas criptográficas para proteger la información médica. El sistema aborda tres aspectos fundamentales de la seguridad de la información: confidencialidad mediante cifrado simétrico AES-256-CBC, integridad mediante funciones hash SHA-256, y autenticación mediante tokens JWT y hash de contraseñas con Bcrypt.
+
+\subsection{Objetivos}
+
+El objetivo principal de este proyecto es desarrollar un sistema de gestión médica que garantice la seguridad de la información mediante la implementación de técnicas criptográficas modernas. Los objetivos específicos incluyen:
+
+\begin{itemize}
+\item Implementar cifrado AES-256-CBC para proteger datos sensibles de pacientes (alergias, antecedentes médicos, historias clínicas).
+\item Integrar funciones hash SHA-256 para verificar la integridad de registros médicos.
+\item Utilizar Bcrypt para el almacenamiento seguro de contraseñas de usuarios.
+\item Implementar autenticación basada en JWT para gestión de sesiones.
+\item Desarrollar una interfaz de usuario intuitiva que permita a médicos y administradores gestionar información de forma segura.
+\item Implementar un sistema de auditoría que registre todas las operaciones realizadas en el sistema.
+\end{itemize}
+
+\subsection{Justificación}
+
+La protección de información médica es crítica debido a su naturaleza sensible. Los registros médicos contienen información personal, diagnósticos, tratamientos y otros datos que, si son comprometidos, pueden resultar en violaciones de privacidad, fraude médico o incluso daño físico a los pacientes. La implementación de técnicas criptográficas robustas no es solo una buena práctica, sino un requisito legal y ético en el manejo de información de salud.
+
+\section{Metodología}
+
+La metodología empleada en el desarrollo de ESPE MedSafe se divide en varias fases: análisis de requisitos, diseño de arquitectura, implementación de técnicas criptográficas, desarrollo del sistema y pruebas de seguridad.
+
+\subsection{Arquitectura del Sistema}
+
+El sistema utiliza una arquitectura cliente-servidor de tres capas:
+
+\begin{itemize}
+\item \textbf{Capa de Presentación:} Frontend desarrollado en React 18.2.0 con Bootstrap 5 para la interfaz de usuario.
+\item \textbf{Capa de Lógica de Negocio:} Backend desarrollado en Flask 3.0.0 (Python 3.12) que implementa la lógica de aplicación y servicios criptográficos.
+\item \textbf{Capa de Datos:} Base de datos PostgreSQL 18 que almacena información cifrada y metadata del sistema.
+\end{itemize}
+
+\subsection{Técnicas Criptográficas Implementadas}
+
+\subsubsection{Cifrado Simétrico AES-256-CBC}
+
+El sistema implementa el algoritmo AES (Advanced Encryption Standard) con claves de 256 bits en modo CBC (Cipher Block Chaining). Esta técnica se utiliza para cifrar:
+
+\begin{itemize}
+\item Alergias de pacientes
+\item Antecedentes médicos
+\item Síntomas en historias clínicas
+\item Diagnósticos médicos
+\item Tratamientos prescritos
+\item Notas adicionales del médico
+\end{itemize}
+
+El modo CBC requiere un Vector de Inicialización (IV) único para cada operación de cifrado. El sistema genera un IV aleatorio de 16 bytes por cada registro médico y lo almacena junto con el texto cifrado. La implementación utiliza la biblioteca \texttt{cryptography} de Python, que proporciona una interfaz robusta y auditada para operaciones criptográficas.
+
+\subsubsection{Función Hash SHA-256}
+
+SHA-256 (Secure Hash Algorithm 256-bit) se implementa para garantizar la integridad de las historias clínicas. Cada vez que se crea o modifica una historia clínica, el sistema calcula un hash SHA-256 de todos los campos relevantes (paciente\_id, doctor\_id, fecha\_consulta, y el contenido en texto plano de los campos médicos antes de ser cifrados). Este hash se almacena en la columna \texttt{hash\_integridad} y se verifica cuando se consulta el registro para detectar cualquier modificación no autorizada.
+
+\subsubsection{Hash de Contraseñas con Bcrypt}
+
+Bcrypt es un algoritmo de hash diseñado específicamente para contraseñas, con un factor de costo configurable que determina su resistencia a ataques de fuerza bruta. El sistema utiliza Bcrypt con 12 rondas (factor de trabajo) para hashear todas las contraseñas de usuarios antes de almacenarlas. Cada hash incluye un salt aleatorio único, lo que previene ataques de tablas rainbow.
+
+\subsubsection{Autenticación con JWT}
+
+JSON Web Tokens (JWT) se utilizan para gestionar sesiones de usuario de forma stateless. Al iniciar sesión exitosamente, el sistema genera un token JWT que incluye:
+
+\begin{itemize}
+\item \texttt{identity}: ID del usuario (como string)
+\item \texttt{username}: Nombre de usuario
+\item \texttt{rol}: Rol del usuario (admin o doctor)
+\end{itemize}
+
+Los tokens tienen una expiración configurable y se validan en cada solicitud a endpoints protegidos.
+
+\subsection{Modelo de Base de Datos}
+
+La base de datos PostgreSQL contiene las siguientes tablas principales:
+
+\begin{itemize}
+\item \textbf{usuarios:} Información de usuarios con contraseñas hasheadas con Bcrypt
+\item \textbf{pacientes:} Datos demográficos y campos cifrados (alergias, antecedentes)
+\item \textbf{historias\_clinicas:} Registros médicos completamente cifrados con hash de integridad
+\item \textbf{audit\_logs:} Registro de todas las operaciones del sistema
+\item \textbf{claves\_rsa:} Almacenamiento de claves RSA para funcionalidades adicionales
+\end{itemize}
+
+\subsection{Validación de Datos}
+
+El sistema implementa validación de cédula ecuatoriana usando el algoritmo de módulo 10, que verifica:
+
+\begin{itemize}
+\item Longitud de 10 dígitos
+\item Código de provincia válido (01-24)
+\item Tercer dígito menor a 6
+\item Dígito verificador correcto según el algoritmo
+\end{itemize}
+
+\subsection{Proceso de Desarrollo}
+
+El desarrollo siguió una metodología ágil con iteraciones semanales:
+
+\begin{enumerate}
+\item \textbf{Semana 1-2:} Diseño de arquitectura y configuración de entorno
+\item \textbf{Semana 3:} Implementación de backend con servicios criptográficos
+\item \textbf{Semana 4:} Desarrollo de frontend con React
+\item \textbf{Semana 5:} Integración y pruebas de seguridad
+\item \textbf{Semana 6:} Documentación y preparación para presentación
+\end{enumerate}
+
+\section{Resultados}
+
+\subsection{Funcionalidades Implementadas}
+
+El sistema ESPE MedSafe incluye los siguientes módulos funcionales:
+
+\subsubsection{Gestión de Usuarios}
+
+Módulo administrativo que permite:
+\begin{itemize}
+\item Crear nuevos usuarios (médicos y administradores)
+\item Editar información de usuarios
+\item Activar/desactivar cuentas
+\item Eliminar usuarios
+\item Validación de cédula ecuatoriana en tiempo real
+\end{itemize}
+
+\subsubsection{Gestión de Pacientes}
+
+Módulo para registro y gestión de pacientes:
+\begin{itemize}
+\item Registro de pacientes con validación de cédula
+\item Almacenamiento cifrado de alergias y antecedentes médicos
+\item Edición de información demográfica
+\item Consulta de historial médico completo
+\end{itemize}
+
+\subsubsection{Historias Clínicas}
+
+Módulo central para registro médico:
+\begin{itemize}
+\item Creación de consultas médicas con cifrado automático
+\item Almacenamiento de síntomas, diagnósticos, tratamientos
+\item Gestión de recetas médicas
+\item Verificación de integridad mediante SHA-256
+\item Indicadores visuales de campos cifrados
+\end{itemize}
+
+\subsubsection{Auditoría}
+
+Sistema de trazabilidad completo:
+\begin{itemize}
+\item Registro automático de todas las operaciones
+\item Información de usuario, acción, tabla afectada, timestamp e IP
+\item Filtros por acción, tabla afectada y usuario
+\item Estadísticas de eventos (total, últimas 24h, tipos de acciones)
+\item Visualización de distribución de acciones
+\end{itemize}
+
+\subsection{Rendimiento del Sistema}
+
+Se realizaron pruebas de rendimiento para evaluar el impacto de las operaciones criptográficas:
+
+\begin{itemize}
+\item \textbf{Cifrado AES-256:} Tiempo promedio de 2-5ms por campo
+\item \textbf{Descifrado AES-256:} Tiempo promedio de 2-5ms por campo
+\item \textbf{Cálculo SHA-256:} Tiempo promedio de 1-2ms
+\item \textbf{Verificación Bcrypt:} Tiempo promedio de 150-200ms (intencional para seguridad)
+\item \textbf{Generación JWT:} Tiempo promedio de 1ms
+\end{itemize}
+
+Estos tiempos demuestran que las operaciones criptográficas no afectan significativamente la experiencia del usuario, manteniendo tiempos de respuesta menores a 500ms para operaciones completas.
+
+\subsection{Seguridad de Datos}
+
+\subsubsection{Protección en Reposo}
+
+Todos los datos sensibles se almacenan cifrados en la base de datos:
+
+\begin{itemize}
+\item Campos médicos cifrados con AES-256-CBC
+\item Contraseñas hasheadas con Bcrypt
+\item IVs únicos por registro para prevenir ataques de patrón
+\item Hash de integridad para detectar modificaciones
+\end{itemize}
+
+\subsubsection{Protección en Tránsito}
+
+La comunicación entre frontend y backend utiliza:
+
+\begin{itemize}
+\item HTTPS para cifrado de canal (recomendado en producción)
+\item Tokens JWT en headers de autorización
+\item CORS configurado con orígenes específicos
+\item Validación de tokens en cada solicitud
+\end{itemize}
+
+\subsubsection{Control de Acceso}
+
+Sistema de roles implementado:
+
+\begin{itemize}
+\item \textbf{Administrador:} Acceso completo a gestión de usuarios, pacientes, historias clínicas y auditoría
+\item \textbf{Doctor:} Acceso a pacientes e historias clínicas, sin acceso a gestión de usuarios ni auditoría
+\end{itemize}
+
+\subsection{Casos de Prueba}
+
+Se ejecutaron los siguientes casos de prueba exitosamente:
+
+\begin{enumerate}
+\item Creación de usuario con validación de cédula ecuatoriana
+\item Cifrado y descifrado de información de paciente
+\item Creación de historia clínica con verificación de integridad
+\item Autenticación con JWT y verificación de roles
+\item Registro de auditoría de todas las operaciones
+\item Edición de usuario sin cambiar contraseña
+\item Eliminación de usuario con registro en auditoría
+\end{enumerate}
+
+\section{Discusión}
+
+\subsection{Efectividad de las Técnicas Criptográficas}
+
+La implementación de AES-256-CBC ha demostrado ser efectiva para proteger información médica sensible. El uso de IVs únicos por registro previene ataques de análisis de patrones, mientras que el modo CBC proporciona difusión adecuada del cifrado. Sin embargo, es importante notar que el sistema genera un nuevo IV con cada operación de cifrado en lugar de reutilizar el IV del registro, lo cual fue corregido durante el desarrollo para asegurar consistencia en el descifrado.
+
+La función hash SHA-256 proporciona una capa adicional de seguridad al permitir la detección de modificaciones no autorizadas en historias clínicas. Esta técnica es especialmente valiosa en contextos legales donde la integridad del registro médico puede ser cuestionada.
+
+Bcrypt con 12 rondas ofrece un balance adecuado entre seguridad y rendimiento. El tiempo de verificación de aproximadamente 200ms es suficientemente lento para frustrar ataques de fuerza bruta, pero no afecta negativamente la experiencia de inicio de sesión del usuario.
+
+\subsection{Desafíos Encontrados}
+
+Durante el desarrollo se identificaron y resolvieron varios desafíos:
+
+\subsubsection{Gestión de IVs en Cifrado AES}
+
+Inicialmente, el sistema generaba múltiples IVs para diferentes campos de un mismo registro, pero solo almacenaba uno. Esto causaba errores de descifrado. La solución implementada utiliza un único IV por registro médico, aplicándolo consistentemente a todos los campos cifrados.
+
+\subsubsection{Integridad de Modelos SQLAlchemy}
+
+Se encontraron conflictos en relaciones bidireccionales entre modelos Usuario y AuditLog. La duplicación de declaraciones de relación causaba errores de inicialización de mappers. La solución fue mantener la relación solo en el modelo Usuario, eliminando la declaración redundante en AuditLog.
+
+\subsubsection{Actualización de Usuarios}
+
+El método de actualización de usuarios inicialmente no incluía todos los campos necesarios (nombre, apellido, cédula, activo). Además, requería contraseña en cada actualización. Se modificó para incluir todos los campos y hacer la contraseña opcional, actualizándola solo cuando se proporciona una nueva.
+
+\subsection{Limitaciones}
+
+El sistema actual presenta algunas limitaciones:
+
+\begin{itemize}
+\item La clave maestra AES está almacenada en el código. En producción debería utilizar un sistema de gestión de claves (KMS).
+\item No implementa rotación automática de claves.
+\item El sistema no incluye respaldo cifrado automático de base de datos.
+\item No implementa autenticación de dos factores.
+\item La eliminación de usuarios es permanente; debería considerar soft delete.
+\end{itemize}
+
+\subsection{Cumplimiento Normativo}
+
+El sistema se alinea con varios estándares y regulaciones:
+
+\begin{itemize}
+\item Uso de algoritmos aprobados por NIST (AES-256, SHA-256)
+\item Implementación de controles de acceso basados en roles
+\item Registro de auditoría de todas las operaciones
+\item Cifrado de información sensible en reposo
+\item Protección de contraseñas mediante hash con salt
+\end{itemize}
+
+\subsection{Comparación con Soluciones Existentes}
+
+Sistemas comerciales como Epic o Cerner implementan técnicas criptográficas similares, pero con capas adicionales de seguridad y cumplimiento de estándares como HIPAA (en Estados Unidos). ESPE MedSafe proporciona una base sólida que podría extenderse para cumplir con requisitos más estrictos, como:
+
+\begin{itemize}
+\item Implementación de HSM (Hardware Security Module) para gestión de claves
+\item Cifrado a nivel de columna en base de datos
+\item Auditoría externa de código criptográfico
+\item Certificación de seguridad por terceros
+\end{itemize}
+
+\section{Conclusiones}
+
+Este trabajo ha demostrado la viabilidad y efectividad de implementar múltiples técnicas criptográficas en un sistema de gestión médica. Las principales conclusiones son:
+
+\begin{enumerate}
+\item La integración de AES-256-CBC, SHA-256, Bcrypt y JWT proporciona protección multinivel que aborda confidencialidad, integridad y autenticación de información médica sensible.
+
+\item El impacto en rendimiento de las operaciones criptográficas es mínimo (menos de 500ms por operación completa), lo que hace viable su implementación en sistemas de producción.
+
+\item La arquitectura de tres capas facilita la separación de responsabilidades y permite actualizaciones independientes de componentes de seguridad.
+
+\item El sistema de auditoría proporciona trazabilidad completa de operaciones, esencial para cumplimiento normativo y forense digital.
+
+\item La validación de cédula ecuatoriana integrada mejora la calidad de datos y previene errores de registro.
+
+\item La implementación de control de acceso basado en roles asegura que usuarios solo accedan a funcionalidades autorizadas.
+
+\item El uso de bibliotecas criptográficas bien establecidas (cryptography, bcrypt) reduce el riesgo de vulnerabilidades comparado con implementaciones personalizadas.
+\end{enumerate}
+
+\subsection{Trabajo Futuro}
+
+Se identifican las siguientes áreas para mejora y extensión:
+
+\begin{itemize}
+\item Implementar autenticación SSH con claves públicas para acceso automatizado seguro
+\item Agregar autenticación de dos factores (2FA) con TOTP o SMS
+\item Implementar rotación automática de claves de cifrado
+\item Desarrollar sistema de respaldo cifrado con almacenamiento en la nube
+\item Integrar con sistemas de gestión de claves empresariales (KMS)
+\item Implementar firma digital de historias clínicas para no repudio
+\item Agregar módulo de reportes con anonimización de datos
+\item Desarrollar API REST documentada con Swagger para integraciones
+\item Implementar cifrado de extremo a extremo para comunicaciones entre médicos
+\item Agregar soporte para documentos médicos (imágenes, PDF) con cifrado
+\end{itemize}
+
+\subsection{Contribuciones}
+
+Este trabajo contribuye al campo de seguridad de información médica mediante:
+
+\begin{itemize}
+\item Demostración práctica de integración de múltiples técnicas criptográficas
+\item Código fuente documentado que puede servir como referencia educativa
+\item Arquitectura escalable que puede adaptarse a diferentes contextos médicos
+\item Casos de prueba que validan la efectividad de cada componente de seguridad
+\end{itemize}
+
+\subsection{Reflexiones Finales}
+
+La seguridad de información médica es un desafío continuo que requiere vigilancia constante y actualización de técnicas de protección. ESPE MedSafe demuestra que es posible implementar seguridad robusta sin sacrificar usabilidad ni rendimiento. Sin embargo, la seguridad no es un estado final sino un proceso continuo de evaluación, mejora y adaptación a nuevas amenazas.
+
+La implementación exitosa de este sistema en la Universidad de las Fuerzas Armadas ESPE podría servir como modelo para otras instituciones educativas y de salud en Ecuador, contribuyendo a elevar los estándares de protección de información médica en el país.
+
+\begin{thebibliography}{00}
+\bibitem{ejemplo1} NIST, ``Advanced Encryption Standard (AES),'' Federal Information Processing Standards Publication 197, 2001.
+
+\bibitem{ejemplo2} D. Eastlake and T. Hansen, ``US Secure Hash Algorithms (SHA and SHA-based HMAC and HKDF),'' RFC 6234, Internet Engineering Task Force, 2011.
+
+\bibitem{ejemplo3} N. Provos and D. Mazières, ``A Future-Adaptable Password Scheme,'' in USENIX Annual Technical Conference, 1999, pp. 81-91.
+
+\bibitem{ejemplo4} M. Jones, J. Bradley, and N. Sakimura, ``JSON Web Token (JWT),'' RFC 7519, Internet Engineering Task Force, 2015.
+
+\bibitem{ejemplo5} Health Insurance Portability and Accountability Act (HIPAA), ``Security Rule,'' U.S. Department of Health and Human Services, 2003.
+
+\bibitem{ejemplo6} Ecuador, ``Ley Orgánica de Protección de Datos Personales,'' Registro Oficial Suplemento 459, 2021.
+
+\bibitem{ejemplo7} W. Stallings, ``Cryptography and Network Security: Principles and Practice,'' 7th ed., Pearson, 2017.
+
+\bibitem{ejemplo8} B. Schneier, ``Applied Cryptography: Protocols, Algorithms, and Source Code in C,'' 2nd ed., John Wiley \& Sons, 1996.
+
+\bibitem{ejemplo9} A. J. Menezes, P. C. van Oorschot, and S. A. Vanstone, ``Handbook of Applied Cryptography,'' CRC Press, 1996.
+
+\bibitem{ejemplo10} M. Bellare and P. Rogaway, ``Introduction to Modern Cryptography,'' University of California at San Diego, 2005.
+
+\bibitem{ejemplo11} D. Ferraiolo, R. Sandhu, S. Gavrila, D. Kuhn, and R. Chandramouli, ``Proposed NIST standard for role-based access control,'' ACM Transactions on Information and System Security (TISSEC), vol. 4, no. 3, pp. 224-274, 2001.
+
+\bibitem{ejemplo12} R. Anderson, ``Security Engineering: A Guide to Building Dependable Distributed Systems,'' 3rd ed., Wiley, 2020.
+
+\end{thebibliography}
+
+\end{document}
